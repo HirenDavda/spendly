@@ -17,3 +17,12 @@ Create a "Terms and Conditions" page for Spendly.
 Include section link: Acceptance of Terms, Use of Service, User Data, Limitations of Liability, and change to Terms.
 Extend base.html if it exist, otherwise match the style of landing.html 
 3. In @templates/landing.html, update the "Terms and Conditions" footer link href from "#" to "/terms".
+
+------------------
+
+Do same as you did for the Terms and Conditions page, but for Privacy Policy
+
+1. Add a new route in [@app.py] (http://app.py/): GET /privacy -> renders templates/privacy.html
+2. Create templates/privacy.html with generic privacy policy content appropriate for a personal expense tracking app.
+Include section link: Data We Collect, How We Use Your Data, Data Storage, Third Party Services, and Contact Us.  
+3. In @templates/landing.html, update the "Privacy Policy" footer link href from "#" to "/privacy".
