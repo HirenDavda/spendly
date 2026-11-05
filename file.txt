@@ -26,3 +26,9 @@ Do same as you did for the Terms and Conditions page, but for Privacy Policy
 2. Create templates/privacy.html with generic privacy policy content appropriate for a personal expense tracking app.
 Include section link: Data We Collect, How We Use Your Data, Data Storage, Third Party Services, and Contact Us.  
 3. In @templates/landing.html, update the "Privacy Policy" footer link href from "#" to "/privacy".
+4. Make sure the apperance looks like the website's theme 
+
+------------------
+
+Modify only the hero section in @templates/landing.html and @static/css/landing.css
+to match this image exactly. Do not touch any other part of the page.    
