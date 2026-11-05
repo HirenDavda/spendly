@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from werkzeug.security import generate_password_hash
 
 DB_PATH = "spendly.db"
 
@@ -18,9 +19,10 @@ def init_db():
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
-                    password TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    name TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    created_at TEXT DEFAULT (datetime('now'))
                 );
             """)
             conn.execute("""
@@ -29,9 +31,9 @@ def init_db():
                     user_id INTEGER NOT NULL,
                     amount REAL NOT NULL,
                     category TEXT NOT NULL,
+                    date TEXT NOT NULL,
                     description TEXT,
-                    date DATE NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    created_at TEXT DEFAULT (datetime('now')),
                     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
                 );
             """)
@@ -43,27 +45,36 @@ def seed_db():
     conn = get_db()
     try:
         with conn:
-            # Sample user (Password is 'password123' in plain text for simplicity in seed,
-            # but in real app should be hashed)
+            # Check if users table already has data to prevent duplication
+            user = conn.execute("SELECT id FROM users LIMIT 1").fetchone()
+            if user:
+                return
+
+            # Demo User
+            demo_user_id = 1
+            hashed_password = generate_password_hash("demo123")
             conn.execute(
-                "INSERT OR IGNORE INTO users (id, username, password) VALUES (?, ?, ?)",
-                (1, "testuser", "password123")
+                "INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)",
+                (demo_user_id, "Demo User", "demo@spendly.com", hashed_password)
             )
 
-            # Sample expenses for user 1
+            # Sample expenses - 8 entries covering all required categories
+            # Categories: Food, Transport, Bills, Health, Entertainment, Shopping, Other
             expenses = [
-                (1, 25.50, "Food", "Lunch at Cafe", "2023-10-01"),
-                (1, 15.00, "Transport", "Bus ticket", "2023-10-02"),
-                (1, 120.00, "Utilities", "Electricity bill", "2023-10-03"),
-                (1, 45.00, "Entertainment", "Movie ticket", "2023-10-04"),
-                (1, 12.99, "Subscriptions", "Music streaming", "2023-10-05"),
+                (demo_user_id, 12.50, "Food", "2023-11-01", "Lunch at Cafe"),
+                (demo_user_id, 5.00, "Transport", "2023-11-02", "Bus fare"),
+                (demo_user_id, 80.00, "Bills", "2023-11-03", "Electricity bill"),
+                (demo_user_id, 40.00, "Health", "2023-11-04", "Pharmacy"),
+                (demo_user_id, 15.00, "Entertainment", "2023-11-05", "Movie ticket"),
+                (demo_user_id, 60.00, "Shopping", "2023-11-06", "New shirt"),
+                (demo_user_id, 20.00, "Other", "2023-11-07", "Gift wrap"),
+                (demo_user_id, 30.00, "Food", "2023-11-08", "Dinner party"),
             ]
             conn.executemany(
-                "INSERT INTO expenses (user_id, amount, category, description, date) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
                 expenses
             )
-    except sqlite3.IntegrityError:
-        # Handle cases where data already exists
-        pass
+    except sqlite3.IntegrityError as e:
+        print(f"Seed error: {e}")
     finally:
         conn.close()

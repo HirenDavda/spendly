@@ -1,5 +1,4 @@
 from flask import Flask, render_template
-import click
 from database.db import init_db, seed_db
 
 app = Flask(__name__)
@@ -36,14 +35,6 @@ def login():
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
 
-@app.cli.command("init-db")
-def init_db_command():
-    """Clear existing data and create tables."""
-    init_db()
-    seed_db()
-    print("Initialized the database and seeded sample data.")
-
-
 @app.route("/logout")
 def logout():
     return "Logout — coming in Step 3"
@@ -70,4 +61,7 @@ def delete_expense(id):
 
 
 if __name__ == "__main__":
+    with app.app_context():
+        init_db()
+        seed_db()
     app.run(debug=True, port=5001)
