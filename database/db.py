@@ -11,6 +11,29 @@ def get_db():
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
+def get_user_by_email(email):
+    """Returns the user row for a given email, or None if not found."""
+    conn = get_db()
+    try:
+        return conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    finally:
+        conn.close()
+
+def create_user(name, email, password_hash):
+    """Inserts a new user into the users table and returns the new user's ID."""
+    conn = get_db()
+    try:
+        with conn:
+            cursor = conn.execute(
+                "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+                (name, email, password_hash)
+            )
+            return cursor.lastrowid
+    except sqlite3.IntegrityError:
+        return None
+    finally:
+        conn.close()
+
 def init_db():
     """Creates all tables using CREATE TABLE IF NOT EXISTS."""
     conn = get_db()
