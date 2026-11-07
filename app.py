@@ -1,5 +1,6 @@
-from flask import Flask, render_template
-from database.db import init_db, seed_db
+from flask import Flask, render_template, request, redirect, url_for
+from werkzeug.security import generate_password_hash
+from database.db import init_db, seed_db, create_user, get_user_by_email
 
 app = Flask(__name__)
 
@@ -21,8 +22,25 @@ def landing():
     return render_template("landing.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
+    if request.method == "POST":
+        name = request.form.get("name")
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        if not password or len(password) < 8:
+            return render_template("register.html", error="Password must be at least 8 characters long")
+
+        if get_user_by_email(email):
+            return render_template("register.html", error="Email already registered")
+
+        hashed_password = generate_password_hash(password)
+        if create_user(name, email, hashed_password):
+            return redirect(url_for("login"))
+        else:
+            return render_template("register.html", error="An error occurred during registration. Please try again.")
+
     return render_template("register.html")
 
 
