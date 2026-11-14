@@ -19,8 +19,13 @@ def get_user_by_email(email):
     finally:
         conn.close()
 
-def create_user(name, email, password_hash):
-    """Inserts a new user into the users table and returns the new user's ID."""
+def create_user(name, email, password):
+    """Hashes the password, inserts a new user, and returns the new user's ID.
+
+    Raises sqlite3.IntegrityError if the email is already taken
+    (enforced by the UNIQUE constraint on users.email).
+    """
+    password_hash = generate_password_hash(password)
     conn = get_db()
     try:
         with conn:
@@ -29,8 +34,6 @@ def create_user(name, email, password_hash):
                 (name, email, password_hash)
             )
             return cursor.lastrowid
-    except sqlite3.IntegrityError:
-        return None
     finally:
         conn.close()
 
