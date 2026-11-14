@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for
-from werkzeug.security import generate_password_hash
-from database.db import init_db, seed_db, create_user, get_user_by_email
+import sqlite3
+
+from flask import Flask, abort, flash, redirect, render_template, request, url_for
+from database.db import init_db, seed_db, create_user
 
 app = Flask(__name__)
+app.secret_key = "dev-secret-key-change-me"
 
 
 @app.route("/terms")
@@ -25,23 +27,36 @@ def landing():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        name = request.form.get("name")
-        email = request.form.get("email")
-        password = request.form.get("password")
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
 
-        if not password or len(password) < 8:
-            return render_template("register.html", error="Password must be at least 8 characters long")
+        if not name or not email or not password or not confirm_password:
+            flash("All fields are required", "error")
+            return render_template("register.html")
 
-        if get_user_by_email(email):
-            return render_template("register.html", error="Email already registered")
+        if password != confirm_password:
+            flash("Passwords do not match", "error")
+            return render_template("register.html")
 
-        hashed_password = generate_password_hash(password)
-        if create_user(name, email, hashed_password):
-            return redirect(url_for("login"))
-        else:
-            return render_template("register.html", error="An error occurred during registration. Please try again.")
+        if len(password) < 8:
+            flash("Password must be at least 8 characters long", "error")
+            return render_template("register.html")
 
-    return render_template("register.html")
+        try:
+            create_user(name, email, password)
+        except sqlite3.IntegrityError:
+            flash("Email already registered", "error")
+            return render_template("register.html")
+
+        flash("Account created successfully! Please sign in.", "success")
+        return redirect(url_for("login"))
+
+    if request.method == "GET":
+        return render_template("register.html")
+
+    abort(405)
 
 
 @app.route("/login")
