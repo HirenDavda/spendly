@@ -1,7 +1,8 @@
 import sqlite3
 
-from flask import Flask, abort, flash, redirect, render_template, request, url_for
-from database.db import init_db, seed_db, create_user
+from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash
+from database.db import get_user_by_email, init_db, seed_db, create_user
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-me"
@@ -26,6 +27,9 @@ def landing():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    if session.get("user_id"):
+        return redirect(url_for("landing"))
+
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip()
@@ -59,8 +63,29 @@ def register():
     abort(405)
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if session.get("user_id"):
+        return redirect(url_for("landing"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            flash("Invalid email or password.", "error")
+            return render_template("login.html")
+
+        user = get_user_by_email(email)
+
+        if user is None or not check_password_hash(user["password_hash"], password):
+            flash("Invalid email or password.", "error")
+            return render_template("login.html")
+
+        session["user_id"] = user["id"]
+        flash("Welcome back!", "success")
+        return redirect(url_for("landing"))
+
     return render_template("login.html")
 
 
@@ -70,7 +95,9 @@ def login():
 
 @app.route("/logout")
 def logout():
-    return "Logout — coming in Step 3"
+    session.clear()
+    flash("You have been signed out.", "success")
+    return redirect(url_for("landing"))
 
 
 @app.route("/profile")
